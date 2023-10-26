@@ -1,6 +1,6 @@
 rm(list = ls())
 
-setwd("~/Documents/lab/araucaria_niches")
+setwd("~/Documents/lab/gymnosperm_niches")
 
 library(readr)
 library(dplyr)
@@ -11,8 +11,10 @@ library(stringi)
 library(hypervolume)
 library(tidyr)
 library(purrr)
-#library(TDAstats)
-#library(ggplot2)
+library(TDAstats)
+library(ggplot2)
+library(patchwork)
+library(phytools)
 
 #envar <- raster::getData("worldclim", var = "tmin", res = 2.5)
 #envar <- raster::getData("worldclim", var = "bio", res = 2.5)
@@ -26,7 +28,7 @@ path_envs <- list.files(path = "wc2-5", pattern='.bil$', recursive = TRUE,
                         full.names = TRUE)
 envsdt <- stack(path_envs)
 
-# DO NOT RUN! (too long) - skip to line 143
+# DO NOT RUN! (too long) - skip to line 150
 cyc_data <- readr::read_tsv("data/Cycadopsida.txt")
 gin_data <- readr::read_tsv("data/Ginkgoopsida.txt")
 gne_data <- readr::read_tsv("data/Gnetopsida.txt")
@@ -189,7 +191,7 @@ fam <- unique(env_df_fam2$species)
 
 tr_fam <- keep.tip(tr_fam, fam)
 
-# calculating Hypervolumes and holes therein using persistence homology
+# calculating hypervolumes and holes therein using persistence homology
 
 # hypervolumes 
 env_df_fam_pca2 <- prcomp(env_df_fam2[, 4:34])
@@ -202,48 +204,159 @@ colnames(env_df_fam_pca2) <- c("family", "lon", "lat", "PC1", "PC2", "PC3")
 env_df_fam_pca2[, 2:6] <- apply(env_df_fam_pca2[, 2:6], 2, as.numeric)
 
 # calculating hypervolumes
-a <- Sys.time()
-env_df_fam_hypervolume <- env_df_fam_pca2 %>%
-  nest(-family) %>%
-  mutate(hypervol = map(data, function(.x){
+
+# DO NOT RUN, too long - skip to line 335 to load the finished dataset
+
+# dividing per family
+env_df_sci_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Sciadopityaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+    }))
+#save(env_df_sci_hypervolume, file = "data/env_df_sci_hypervolume.RData")
+#load(file = "data/env_df_sci_hypervolume.RData")
+
+env_df_gne_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Gnetaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
     hyper <- hypervolume_gaussian(.x[3:5])
     hyper
   }))
-b <- Sys.time()
-#### ~~ Persistence Homology calculations ~~~ ####
-## Functions 
+#save(env_df_gne_hypervolume, file = "data/env_df_gne_hypervolume.RData")
+#load(file = "data/env_df_gne_hypervolume.RData")
+
+env_df_wel_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Welwitschiaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_wel_hypervolume, file = "data/env_df_wel_hypervolume.RData")
+#load(file = "data/env_df_wel_hypervolume.RData")
+
+env_df_cyc_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Cycadaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_cyc_hypervolume, file = "data/env_df_cyc_hypervolume.RData")
+#load(file = "data/env_df_cyc_hypervolume.RData")
+
+env_df_ara_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Araucariaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_ara_hypervolume, file = "data/env_df_ara_hypervolume.RData")
+#load(file = "data/env_df_ara_hypervolume.RData")
+
+env_df_zam_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Zamiaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_zam_hypervolume, file = "data/env_df_zam_hypervolume.RData")
+#load(file = "data/env_df_zam_hypervolume.RData")
+
+env_df_eph_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Ephedraceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_eph_hypervolume, file = "data/env_df_eph_hypervolume.RData")
+#load(file = "data/env_df_eph_hypervolume.RData")
+
+env_df_gin_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Ginkgoaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_gin_hypervolume, file = "data/env_df_gin_hypervolume.RData")
+#load(file = "data/env_df_gin_hypervolume.RData")
+
+env_df_pod_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Podocarpaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_pod_hypervolume, file = "data/env_df_pod_hypervolume.RData")
+#load(file = "data/env_df_pod_hypervolume.RData")
+
+env_df_tax_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Taxaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_tax_hypervolume, file = "data/env_df_tax_hypervolume.RData")
+#load(file = "data/env_df_tax_hypervolume.RData")
+
+# TOO HEAVY - try to run on another place
+env_df_cup_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Cupressaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_cup_hypervolume, file = "data/env_df_cup_hypervolume.RData")
+#load(file = "data/env_df_cup_hypervolume.RData")
+
+# TOO HEAVY - try to run on another place
+env_df_pin_hypervolume <- env_df_fam_pca2 %>%
+  nest(data = -family) %>% filter(family == "Pinaceae") %>%
+  mutate(hypervol = map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+#save(env_df_pin_hypervolume, file = "data/env_df_pin_hypervolume.RData")
+#load(file = "data/env_df_pin_hypervolume.RData")
+
+env_df_hypervolume <- bind_rows(env_df_sci_hypervolume,
+                                env_df_gne_hypervolume,
+                                env_df_wel_hypervolume,
+                                env_df_cyc_hypervolume,
+                                env_df_ara_hypervolume,
+                                env_df_zam_hypervolume,
+                                env_df_eph_hypervolume,
+                                env_df_gin_hypervolume,
+                                env_df_pod_hypervolume,
+                                env_df_tax_hypervolume,
+                                env_df_cup_hypervolume,
+                                env_df_pin_hypervolume)
+
+#save(env_df_hypervolume, file = "env_df_hypervolume.RData")
+#load(file = "env_df_hypervolume.RData")
+
+# persistence homology (PH) calculations
 subsample.distance_demo <- function (x, size, d, d.max = NULL, 
                                      replacement = FALSE, latlong = FALSE,
                                      echo = FALSE) {
   
   if (missing(x))
-    
     stop("Must define a spatial object")
   
   if (missing(d))
-    
     stop("Must define minimum separation distance")
   
   if (!is.null(d.max)) {
-    
-    if (d.max <= d)
-      
-      stop("Maximum distance must be larger than minimum")
-    
+    if (d.max <= d) stop("Maximum distance must be larger than minimum")
   }
   
   if (!any(class(x)[1] == c("SpatialPointsDataFrame", "SpatialPolygonsDataFrame")))
-    
     stop("x must be sp class polygons or points")
   
   if (latlong == TRUE) {
-    
     message("geographic projection distances must be in kilometers")
-    
   }
   
   if (size >= nrow(x))
-    
     stop("subsample size must be smaller than population")
   
   rs <- sample(1:nrow(x), 1)
@@ -251,69 +364,43 @@ subsample.distance_demo <- function (x, size, d, d.max = NULL,
   s <- x[rs, ]
   
   if (replacement == FALSE) {
-    
     x <- x[-rs, ]
-    
   }
   
   deval = TRUE
   
   for (i in 2:size) {
-    
     nsamp = 0
     
     while (deval == TRUE) {
-      
       rs <- sample(1:nrow(x), 1)
-      
       pts.dist = sp::spDists(s, x[rs, ], longlat = latlong)
       
       if (is.null(d.max)) {
-        
         deval <- any(pts.dist < d, na.rm = TRUE)
-        
-      }
-      
-      else {
-        
-        deval <- any(pts.dist < d, na.rm = TRUE) | any(pts.dist >
-                                                         
-                                                         d.max, na.rm = TRUE)
-        
+      } else {
+        deval <- any(pts.dist < d, na.rm = TRUE) | any(pts.dist > d.max, 
+                                                       na.rm = TRUE)
       }
       
       nsamp = nsamp + 1
       
       if (echo)
-        
         cat("Sample iteration=", nsamp, "\n")
       
       if (nsamp == nrow(x))
-        
         break
-      
     }
     
     if (echo) {
-      
-      cat("\n", "Min distance for", i, "=", min(pts.dist,
-                                                
-                                                na.rm = TRUE), "\n")
-      
-      cat(" Max distance for", i, "=", max(pts.dist, na.rm = TRUE),
-          
-          "\n")
-      
+      cat("\n", "Min distance for", i, "=", min(pts.dist, na.rm = TRUE), "\n")
+      cat(" Max distance for", i, "=", max(pts.dist, na.rm = TRUE), "\n")
     }
     
     if (nsamp == nrow(x)) {
-      
-      message(paste0("Warning: sampling cannot converge at n=",
-                     
-                     size, " returning n=", nrow(s)))
-      
+      message(paste0("Warning: sampling cannot converge at n=", size, 
+                     " returning n=", nrow(s)))
       return(s)
-      
     }
     
     deval = TRUE
@@ -321,9 +408,7 @@ subsample.distance_demo <- function (x, size, d, d.max = NULL,
     s <- rbind(s, x[rs, ])
     
     if (replacement == FALSE) {
-      
       x <- x[-rs, ]
-      
     }
     
   }
@@ -338,14 +423,11 @@ subsample_distance <- function(df, size, d, ...) {
   
   for(i in 1:ncol(df)){
     
-    for(j in 1:ncol(df)){
+    for(j in 1:ncol(df)) {
       
       if(i == j | j > i){
-        
         next
-        
       } else {
-        
         testsp <- df
         
         sp::coordinates(testsp) <- c(i, j)
@@ -353,7 +435,6 @@ subsample_distance <- function(df, size, d, ...) {
         sub <- subsample.distance_demo(testsp, size = size/ncol(df), d = d) ##d is for the minimum distance between the points sampled
         
         sub.meuse <- bind_rows(sub.meuse, as.data.frame(sub))
-        
       }
       
     }
@@ -364,107 +445,92 @@ subsample_distance <- function(df, size, d, ...) {
   
 }
 
-####
-###### ~~~~~ automating the calculations for PH ~~~~~~~ #####
-env_cyc_df_clean_hypervolume2 <- env_cyc_df_clean_hypervolume %>%
-  mutate(randomHyper = map(hypervol, function(.x){
+# automating the calculations for PH 
+env_df_hypervolume2 <- env_df_hypervolume %>%
+  mutate(randomHyper = purrr::map(hypervol, function(.x) {
     out <- apply(.x@RandomPoints, 2, base::scale)
   })) %>%
-  mutate(persistenceHomology = map(randomHyper, function(.x){
-    set.seed(145) ## setting seed for reproducibility
+  mutate(persistenceHomology = purrr::map(randomHyper, function(.x) {
+    set.seed(145) # setting seed for reproducibility
     subset_hyper <- as.data.frame(.x) 
-    subset_hyper <- subsample_distance(subset_hyper,
-                                       size = 300,
-                                       d = 0.2) ## subseting  
-    PH_calc <- calculate_homology(subset_hyper, dim = 2) # calculating ph
+    subset_hyper <- subsample_distance(subset_hyper, size = 300, 
+                                       d = 0.2) # subseting  
+    PH_calc <- calculate_homology(subset_hyper, dim = 2) # calculating PH
     return(list(hyper_subset = subset_hyper,
                 persHomol = as.data.frame(PH_calc)))
   }))
 
-env_cyc_df_clean_hypervolume2 <- env_cyc_df_clean_hypervolume %>%
-  mutate(randomHyper = map(hypervol, function(.x){
-    out <- apply(.x@RandomPoints, 2, base::scale)
-  })) %>%
-  mutate(persistenceHomology = map(randomHyper, function(.x){
-    set.seed(145) ## setting seed for reproducibility
-    subset_hyper <- as.data.frame(.x) 
-    subset_hyper <- subsample_distance(subset_hyper,
-                                       size = 300,
-                                       d = 0.2) ## subseting  
-    PH_calc <- calculate_homology(subset_hyper, dim = 2) # calculating ph
-    return(list(hyper_subset = subset_hyper,
-                persHomol = as.data.frame(PH_calc)))
-  }))
-
-env_cyc_df_clean_hypervolume3 <- env_cyc_df_clean_hypervolume2 %>%
-  mutate(hull = map(randomHyper, function(.x){
+env_df_hypervolume3 <- env_df_hypervolume2 %>%
+  mutate(hull = purrr::map(randomHyper, function(.x) {
     hullout <- with(as.data.frame(.x), chull(PC1, PC2))
     hullout
   }),
-  out = map2(randomHyper, hull, ~ .x[.y,,drop=FALSE]))
+  out = map2(randomHyper, hull, ~ .x[.y,,drop = FALSE]))
 
-#save(env_cyc_df_clean_hypervolume3, file = "data/env_araucaria_df_clean_hypervolume3.RData")
+index <- which(env_df_hypervolume3$family %in% tr_fam$tip.label)
+env_df_hypervolume3 <- env_df_hypervolume3[index,]
 
-tree_cyc <- read.nexus("data/Cycadales_Condamine_2015.tre")
-index <- which(env_cyc_df_clean_hypervolume3$species %in% tree_cyc$tip.label)
-env_cyc_df_clean_hypervolume3 <- env_cyc_df_clean_hypervolume3[index,]
+#save(env_df_hypervolume3, file = "data/env_df_hypervolume3.RData")
 
-## Plots of the point clouds
+# plots of the point clouds
+
 plot_points <- list()
-for(i in 1:nrow(env_cyc_df_clean_hypervolume3)){
-  plot_points[[i]] <- ggplot(as.data.frame(env_cyc_df_clean_hypervolume3$out[[i]]), 
+for (i in 1:nrow(env_df_hypervolume3)) {
+  plot_points[[i]] <- ggplot(as.data.frame(env_df_hypervolume3$out[[i]]), 
                              aes(PC1, PC2, col = PC3)) +
     geom_polygon(alpha = 0.05, fill = "royalblue2", col = NA) +
-    geom_point(data = as.data.frame(env_cyc_df_clean_hypervolume3$randomHyper[[i]]),
-               aes(PC1, PC2, col = PC3), inherit.aes = FALSE, alpha = 0.07, size = 0.2) +
-    geom_point(data = env_cyc_df_clean_hypervolume3$persistenceHomology[[i]]$hyper_subset,
+    geom_point(data = as.data.frame(env_df_hypervolume3$randomHyper[[i]]),
+               aes(PC1, PC2, col = PC3), inherit.aes = FALSE, alpha = 0.07, 
+               size = 0.2) +
+    geom_point(data = env_df_hypervolume3$persistenceHomology[[i]]$hyper_subset,
                aes(PC1, PC2, col = PC3), 
                inherit.aes = FALSE, alpha = 1, size = 1.5) +
-    ggtitle(paste0(env_cyc_df_clean_hypervolume3$species[i])) +
+    ggtitle(paste0(env_df_hypervolume3$family[i])) +
     scale_color_viridis_c() +
     theme_bw() +
     theme(panel.grid = element_blank(),
           axis.text = element_text(size = 8),
           axis.title = element_text(size = 9),
-          plot.title = element_text(size = 9, face = "bold.italic", hjust = 0.5))
+          plot.title = element_text(size = 9, face = "bold", hjust = 0.5))
   
 }
 
-## plots of the persistence diagrams ##
+# plots of the persistence diagrams
 plot_persistence <- list()
-for(i in 1:nrow(env_cyc_df_clean_hypervolume3)){
-  plot_persistence[[i]] <- ggplot(data = env_cyc_df_clean_hypervolume3$persistenceHomology[[i]]$persHomol,
+for (i in 1:nrow(env_df_hypervolume3)) {
+  plot_persistence[[i]] <- ggplot(data = env_df_hypervolume3$persistenceHomology[[i]]$persHomol,
                                   aes(x = birth, 
                                       y = death, 
                                       shape = as.factor(dimension), 
                                       color = as.factor(dimension))) +
     geom_point(alpha = 0.9) +
     geom_abline(slope = 1, size = 0.2) +
-    xlab('Birth') +
-    ylab('Death') +
+    xlab("Birth") +
+    ylab("Death") +
     theme_linedraw() +
     theme(panel.grid = element_blank(),
           axis.text = element_text(size = 9),
           axis.title = element_text(size = 11),
           legend.text = element_text(size = 8),
           legend.title = element_text(size = 9)) +
-    scale_color_manual('Dimension', values = c("darkseagreen3", "royalblue2", "hotpink")) +
-    scale_shape_manual('Dimension', values=c(15,17,19))
-  
+    scale_color_manual("Dimension", 
+                       values = c("darkseagreen3", "royalblue2", "hotpink")) +
+    scale_shape_manual("Dimension", values = c(15, 17, 19))
 }
 
-library(patchwork)
 final_plot <- c(rbind(plot_points, plot_persistence))
+
+pdf("figures/Fig1_F.pdf", height = 9, width = 10)
 wrap_plots(final_plot) + plot_layout(ncol = 4)
+dev.off()
 
+# pairwise bottleneck distances of the persistence homology 
+# estimating pairwise bottleneck distances from the PHs of the species
 
-
-### ~~~~ Pairwise bottleneck distances of the persistence homology ~~~~~ ###
-### Estimating pairwise bottleneck distances from the PHs of the species ###
-## Function to estimate the distance between two persistence diagrams
-homology_distance <- function(x, y, dim = 2, ...){
+# function to estimate the distance between two persistence diagrams
+homology_distance <- function(x, y, dim = 2, ...) {
   output <- c()
-  for(i in 0:dim){
+  for (i in 0:dim) {
     dist <- TDA::bottleneck(as.matrix(x), as.matrix(y), i)
     output <- cbind(output, dist)
     colnames(output)[i + 1] <- paste(i)
@@ -472,167 +538,183 @@ homology_distance <- function(x, y, dim = 2, ...){
   return(as.data.frame(output))
 }
 
-
-## Pairwise distance of the persistence (bottleneck distances)
-pairwise_persistence <- function(df){
+# pairwise distance of the persistence (bottleneck distances)
+pairwise_persistence <- function(df) {
   output <- c()
-  ## for loop for pairwise interactions ##
-  for(i in 1:nrow(df)){
-    for(j in 1:nrow(df)){
-      if(i <= j){ #excluding self-comparison and double-comparison
+  # for loop for pairwise interactions
+  for (i in 1:nrow(df)) {
+    for (j in 1:nrow(df)) {
+      if (i <= j) { # excluding self-comparison and double-comparison
         next
-      }else{
+      } else {
         pairwise_dist_out <- homology_distance(df$persistenceHomology[[i]]$persHomol,
                                                df$persistenceHomology[[j]]$persHomol)
-        sp1 <- df$species[j]
-        sp2 <- df$species[i]
+        fam1 <- df$family[j]
+        fam2 <- df$family[i]
         
-        outdata <- data.frame(species1 = sp1, species2 = sp2, dist = pairwise_dist_out)
+        outdata <- data.frame(family1 = fam1, family2 = fam2, dist = pairwise_dist_out)
         output <- as.data.frame(bind_rows(output, outdata))
       }
     }
   }
   
-  output_final <- data.frame(species1 = output$species2, 
-                             species2 = output$species1) %>%
+  output_final <- data.frame(family1 = output$family2, 
+                             family2 = output$family1) %>%
     bind_cols(., output[3:5]) %>%
     bind_rows(., output)
   
   return(as.data.frame(output_final))
 }
 
+homology_distance(env_df_hypervolume3$persistenceHomology[[1]]$persHomol,
+                  env_df_hypervolume3$persistenceHomology[[2]]$persHomol)
 
+pairw_persist_hypervol <- pairwise_persistence(env_df_hypervolume3)
+colnames(pairw_persist_hypervol) <- c("family1", "family2", "dist.0", "dist.1", "dist.2")
 
-
-homology_distance(env_araucaria_df_clean_hypervolume3$persistenceHomology[[1]]$persHomol,
-                  env_araucaria_df_clean_hypervolume3$persistenceHomology[[2]]$persHomol)
-
-
-### This works but needs to change the name of the object from "test" to someting permanent
-test <- pairwise_persistence(env_araucaria_df_clean_hypervolume3)
-colnames(test) <- c("species1", "species2", "dist.0", "dist.1", "dist.2")
-
-
-
-plot_dist0 <- ggplot(test, aes(species1, species2, fill= dist.0)) + 
+plot_dist0 <- ggplot(pairw_persist_hypervol, 
+                     aes(family1, family2, fill = dist.0)) + 
   geom_tile() +
-  scale_fill_viridis_c('Distance\n(Dim 0)', option = "mako") + 
+  scale_fill_viridis_c("Distance\n(Dim 0)", option = "mako") + 
   theme_bw() + 
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = -0.0)) +
-  xlab('') +  scale_x_discrete(drop = FALSE) +
-  ylab('Species 2')
+  xlab("") +  scale_x_discrete(drop = FALSE) +
+  ylab("Family 2")
 
 
-plot_dist1 <- ggplot(test, aes(species1, species2, fill= dist.1)) + 
+plot_dist1 <- ggplot(pairw_persist_hypervol, 
+                     aes(family1, family2, fill = dist.1)) + 
   geom_tile() +
-  scale_fill_viridis_c('Distance\n(Dim 1)', option = "mako") + 
+  scale_fill_viridis_c("Distance\n(Dim 1)", option = "mako") + 
   theme_bw() + 
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = -0.0),
         axis.text.y = element_blank()) +
-  xlab('Species 1') + 
-  ylab('')
+  xlab("Family 1") + 
+  ylab("")
 
 
-plot_dist2 <- ggplot(test, aes(species1, species2, fill= dist.2)) + 
+plot_dist2 <- ggplot(pairw_persist_hypervol, 
+                     aes(family1, family2, fill = dist.2)) + 
   geom_tile() +
-  scale_fill_viridis_c('Distance\n(Dim 2)', option = "mako") + 
+  scale_fill_viridis_c("Distance\n(Dim 2)", option = "mako") + 
   theme_bw() + 
   theme(panel.grid = element_blank(),
         axis.text.x = element_text(angle = 90, hjust = 1, vjust = -0.0),
         axis.text.y = element_blank()) +
-  xlab('') + 
-  ylab('')
+  xlab("") + 
+  ylab("")
 
-library(patchwork)
-final_plot_distance <-wrap_plots(plot_dist0, plot_dist1, plot_dist2)
+final_plot_distance <- wrap_plots(plot_dist0, plot_dist1, plot_dist2)
+
+pdf("figures/Fig2_F.pdf", width = 12, height = 4)
 final_plot_distance
+dev.off()
 
-
-
-
-
-
-## Summary dimensions
-summary_persistence <- function(df){
+# summary dimensions
+summary_persistence <- function(df) {
   output <- c()
-  ## for loop for pairwise interactions ##
-  for(i in 1:nrow(df)){
+  # for loop for pairwise interactions
+  for (i in 1:nrow(df)) {
     outdata <- df$persistenceHomology[[i]]$persHomol %>%
       mutate(surv = death - birth) %>%
       group_by(dimension) %>%
       summarise(avg_surv = mean(surv),
                 sd_surv = sd(surv),
                 max_surv = max(surv)) %>%
-      mutate(species = df$species[i])
+      mutate(family = df$family[i])
     output <- as.data.frame(bind_rows(output, outdata))
   }
-  output <- output[c(5,1,2,3,4)]
+  output <- output[c(5, 1, 2, 3, 4)]
   return(as.data.frame(output))
 }
 
+# calculating average survival of connected components
+persistence_info_dt <- summary_persistence(env_df_hypervolume3) 
 
-## calculating average survival of connected components
-persistence_info_dt <- summary_persistence(env_araucaria_df_clean_hypervolume3) 
-#
-
-volume_hyper <-  env_araucaria_df_clean_hypervolume3 %>%
-  mutate(hv_vol = purrr::map(hypervol, function(.x){
+volume_hyper <-  env_df_hypervolume3 %>%
+  mutate(hv_vol = purrr::map(hypervol, function(.x) {
     .x@Volume
   })) %>%
-  dplyr::select(species, hv_vol) %>%
+  dplyr::select(family, hv_vol) %>%
   tidyr::unnest(hv_vol) %>%
   right_join(., persistence_info_dt) 
 
-## subsetting only species in the tree
-index_vol <- which(volume_hyper$species %in% araucariaTree_rooted$tip.label)
+# subsetting only species in the tree
+index_vol <- which(volume_hyper$family %in% tr_fam$tip.label)
 volume_hyper <- volume_hyper[index_vol,]
-
 
 outersect <- function(x, y) {
   sort(c(setdiff(x, y),
          setdiff(y, x)))
 }
 
-araucariaTree_cleaned <- drop.tip(treeRatchet, as.vector(outersect(treeRatchet$tip.label, volume_hyper$species)))
-araucariaTree_cleaned$edge.length <- ifelse(araucariaTree_cleaned$edge.length == 0,
-                                            2000,
-                                            2000+araucariaTree_cleaned$edge.length) ## I cannot have branches with zero length or polytomies, so using this to increase branch sizes
-plot(araucariaTree_cleaned)
+tr_fam_cleaned <- drop.tip(tr_fam, as.vector(outersect(tr_fam$tip.label, 
+                                                              volume_hyper$family)))
+plot(tr_fam_cleaned)
 
-### ±±± Plotting the hypervolume for the main text
-## plotting phylogeny with continuous traits
+# plotting the hypervolume for the main text
+  # plotting phylogeny with continuous traits
+
+layout(matrix(1:4, ncol = 2, byrow = T))
+
 volume_hyper_dim0 <- volume_hyper %>%
+  filter(dimension == 0) %>%
+  droplevels() %>%
+  tibble::column_to_rownames(., "family")
+
+# volume of hypervolume
+volume_hyper_vol_plot <- setNames(volume_hyper_dim0[, 1], 
+                                  rownames(volume_hyper_dim0))
+obj1 <- contMap(tr_fam_cleaned, volume_hyper_vol_plot, plot = FALSE)
+obj1 <- setMap(obj1, invert = TRUE)
+plot(obj1, fsize = c(0.9, 0.5), outline = TRUE, lwd = c(4, 7), 
+     leg.txt = "Volume")
+
+# dimension
+volume_hyper_dim0_plot <- setNames(volume_hyper_dim0[, 3], 
+                                   rownames(volume_hyper_dim0))
+obj2 <- contMap(tr_fam_cleaned, volume_hyper_dim0_plot, plot = FALSE)
+obj2 <- setMap(obj2, invert = TRUE)
+plot(obj2, fsize = c(0.9, 0.5), outline = TRUE, lwd = c(4, 7), 
+     leg.txt = "Dim 0")
+
+# dimension
+volume_hyper_dim1 <- volume_hyper %>%
+  filter(dimension == 1) %>%
+  droplevels() %>%
+  tibble::column_to_rownames(., "family")
+
+volume_hyper_dim1_plot <- setNames(volume_hyper_dim1[, 3], 
+                                   rownames(volume_hyper_dim1))
+obj2 <- contMap(tr_fam_cleaned, volume_hyper_dim1_plot, plot = FALSE)
+obj2 <- setMap(obj2, invert = TRUE)
+plot(obj2, fsize = c(0.9, 0.5), outline = TRUE, lwd = c(4, 7), 
+     leg.txt = "Dim 1")
+
+# dimension
+volume_hyper_dim2 <- volume_hyper %>%
   filter(dimension == 2) %>%
   droplevels() %>%
-  tibble::column_to_rownames(., "species")
+  tibble::column_to_rownames(., "family")
 
-## Volume of hypervolume
-volume_hyper_vol_plot <- setNames(volume_hyper_dim0[,1], rownames(volume_hyper_dim0))
-obj1<-contMap(araucariaTree_cleaned,volume_hyper_vol_plot,plot=FALSE)
-obj1<-setMap(obj1,invert=TRUE)
-plot(obj1,fsize=c(0.9,0.5),outline=TRUE,lwd=c(4,7),leg.txt="Volume")
+volume_hyper_dim2 <- setNames(volume_hyper_dim2[, 3], 
+                              rownames(volume_hyper_dim2))
+obj2 <- contMap(tr_fam_cleaned, volume_hyper_dim2, plot = FALSE)
+obj2 <- setMap(obj2, invert = TRUE)
+plot(obj2, fsize = c(0.9, 0.5), outline = TRUE, lwd = c(4, 7), 
+     leg.txt = "Dim 2")
 
-## dimension (Plot of the dimensions, done one by one (note: needs to change the "filter" dimension to obtain the others, as above))
-volume_hyper_dim0_plot <- setNames(volume_hyper_dim0[,5], rownames(volume_hyper_dim0))
-obj2<-contMap(araucariaTree_cleaned,volume_hyper_dim0_plot,plot=FALSE)
-obj2<-setMap(obj2,invert=TRUE)
-plot(obj2,fsize=c(0.9,0.5),outline=TRUE,lwd=c(4,7),leg.txt="Dim 2")
-
-
-fancydt <- volume_hyper %>% dplyr::select(-sd_surv) %>%
-  pivot_wider(., values_from = avg_surv, names_from = dimension) %>%
-  tibble::column_to_rownames(., "species")
-
-fancyPlot<-fancyTree(araucariaTree_cleaned,type="scattergram",X=fancydt[,c(1:4)])
-
-signalphy <- phylosig(araucariaTree_cleaned, volume_hyper_dim0_plot, method = "K",
-                      test = TRUE, nsim = 999)
-signalphy$sim.K
-str(signalphy)
-plot(signalphy)
-
+#
+#
+#fancydt <- volume_hyper %>% dplyr::select(-sd_surv) %>%
+#  pivot_wider(., values_from = avg_surv, names_from = dimension) %>%
+#  tibble::column_to_rownames(., "species")
+#
+#fancyPlot<-fancyTree(tr_fam_cleaned,type="scattergram",X=fancydt[,c(1:4)])
+#
+#
 
 calculate_physig <- function(tree, 
                              data,
@@ -640,56 +722,93 @@ calculate_physig <- function(tree,
                              method = "K",
                              test = TRUE, 
                              nsim = 999, 
+                             niter = 999,
                              dim = 2, ...){
   output <- c()
   inner <- c()
-  for(j in 0:dim){
+  for (j in 0:dim) {
     volume_hyper <- data %>%
       filter(dimension == j) %>%
       droplevels() %>%
-      tibble::column_to_rownames(., "species") ## subsetting the data and dim
+      tibble::column_to_rownames(., "family") # subsetting the data and dim
     
     volume_hyper <- setNames(volume_hyper[,1], rownames(volume_hyper))
     signalphy <- phylosig(tree, 
                           volume_hyper, method = method,
-                          test = test, nsim = nsim)# physignal calculation
-    inner <-  bind_rows(inner, 
-                        data.frame(dim = j,
-                                   simK = signalphy$sim.K,
-                                   pval = signalphy$P))
+                          test = test, nsim = nsim, niter = niter) # physignal calculation
+    if (method == "K") {
+      inner <- bind_rows(inner, data.frame(dim = j,
+                                           estimate = signalphy$K,
+                                           sim = signalphy$sim.K
+                                           pval = signalphy$P))
+    } else {
+      inner <- bind_rows(inner, data.frame(dim = j,
+                                           estimate = signalphy$lambda,
+                                           pval = signalphy$P))
+    }
+
   }
   output <- bind_rows(output, inner)
   return(output)
 }
 
-
-
-hypervolume_sig <- calculate_physig(araucariaTree_cleaned, volume_hyper[c(1,2,3)]) %>%
+hypervolume_sig_K <- calculate_physig(tr_fam_cleaned, 
+                                      volume_hyper[c(1, 2, 3)]) %>%
   mutate(type = "Hypervolume")
 
-avgdist_sig <- calculate_physig(araucariaTree_cleaned, volume_hyper[c(1,4,3)]) %>%
+avgdist_sig_K <- calculate_physig(tr_fam_cleaned, 
+                                  volume_hyper[c(1, 4, 3)]) %>%
   mutate(type = "Mean dist")
 
-sddist_sig <- calculate_physig(araucariaTree_cleaned, volume_hyper[c(1,5,3)]) %>%
+sddist_sig_K <- calculate_physig(tr_fam_cleaned, 
+                                 volume_hyper[c(1, 5, 3)]) %>%
   mutate(type = "SD dist")
 
-maxdist_sig <- calculate_physig(araucariaTree_cleaned, volume_hyper[c(1,6,3)]) %>%
+maxdist_sig_K <- calculate_physig(tr_fam_cleaned, 
+                                  volume_hyper[c(1, 6, 3)]) %>%
   mutate(type = "Max dist")
 
-final_signal <- bind_rows(hypervolume_sig,
-                          avgdist_sig,
-                          sddist_sig,
-                          maxdist_sig)
-tail(avgdist_sig)
+hypervolume_sig_L <- calculate_physig(tr_fam_cleaned, 
+                                      volume_hyper[c(1, 2, 3)],
+                                      method = "lambda") %>%
+  mutate(type = "Hypervolume")
 
-dummy <- final_signal  %>%
-  group_by(dim, type) %>%
-  summarize(mean = mean(simK),
-            pvalue = mean(pval))
+avgdist_sig_L <- calculate_physig(tr_fam_cleaned, 
+                                  volume_hyper[c(1, 4, 3)],
+                                  method = "lambda") %>%
+  mutate(type = "Mean dist")
 
+sddist_sig_L <- calculate_physig(tr_fam_cleaned, 
+                                 volume_hyper[c(1, 5, 3)],
+                                 method = "lambda") %>%
+  mutate(type = "SD dist")
 
-signal_plot <- ggplot(data =final_signal, 
-                      aes(x = simK, col = type, fill = type)) +
+maxdist_sig_L <- calculate_physig(tr_fam_cleaned, 
+                                  volume_hyper[c(1, 6, 3)],
+                                  method = "lambda") %>%
+  mutate(type = "Max dist")
+
+final_signal <- bind_rows(cbind(method = "K", hypervolume_sig_K),
+                          cbind(method = "L", hypervolume_sig_L),
+                          cbind(method = "K", avgdist_sig_K),
+                          cbind(method = "L", avgdist_sig_L),
+                          cbind(method = "K", sddist_sig_K),
+                          cbind(method = "L", sddist_sig_L),
+                          cbind(method = "K", maxdist_sig_K),
+                          cbind(method = "L", maxdist_sig_L))
+
+#
+#
+#dummy <- final_signal  %>%
+#  group_by(dim, method, type) %>%
+#  summarize(mean = mean(estimate),
+#            pvalue = mean(pval))
+#
+#
+
+signal_plot <- final_signal %>%
+  filter(method == "K") %>%
+  ggplot(aes(x = estimate, col = type, fill = type)) +
   geom_density(alpha = 0.4)+
   facet_grid(dim ~ type) +
   geom_vline(data = dummy, aes(xintercept = mean, color = type), linetype = "dashed") + 
