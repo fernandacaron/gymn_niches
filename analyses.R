@@ -168,42 +168,80 @@ env_df_clean2 <- rbind(env_cyc_df_clean2, env_gin_df_clean2, env_gne_df_clean2,
 
 spp_tree <- env_df_clean2$species %in% intersect(env_df_clean2$species,
                                                  tree$tip.label)
-env_df_fam <- env_df_clean2[spp_tree,] %>% na.omit() %>% droplevels()
+env_df_clean3 <- env_df_clean2[spp_tree,] %>% na.omit() %>% droplevels()
 
-spp_tax <- tax$family
-names(spp_tax) <- tax$scientificName
+fam_tax <- tax$family
+names(fam_tax) <- tax$scientificName
 
-env_df_fam2 <- env_df_fam %>% 
-  mutate(species = ifelse(species %in% names(spp_tax), 
-                          spp_tax[as.character(species)],
-                          NA))
-env_df_fam2 <- env_df_fam2 %>% na.omit() %>% droplevels()
+gen_tax <- tax$genus
+names(gen_tax) <- tax$scientificName
 
-#save(env_df_fam2, file = "data/env_df_fam2.RData")
-#load(file = "data/env_df_fam2.RData")
+env_df_gen <- env_df_clean3 %>% 
+  mutate(species = ifelse(species %in% names(gen_tax), 
+                          gen_tax[as.character(species)],
+                          NA)) %>% 
+  na.omit() %>% 
+  droplevels()
+#save(env_df_gen, file = "data/env_df_gen.RData")
+#load(file = "data/env_df_gen.RData")
+
+env_df_fam <- env_df_clean3 %>% 
+  mutate(species = ifelse(species %in% names(fam_tax), 
+                          fam_tax[as.character(species)],
+                          NA)) %>% 
+  na.omit() %>% 
+  droplevels()
+#save(env_df_fam, file = "data/env_df_fam.RData")
+#load(file = "data/env_df_fam.RData")
+
+tr_gen <- tree
+for (i in 1:length(tr_gen$tip.label)) {
+  tr_gen$tip.label[i] <- gen_tax[tr_gen$tip.label[i]]
+}
+gen <- unique(env_df_gen$species)
+tr_gen <- keep.tip(tr_gen, gen)
 
 tr_fam <- tree
 for (i in 1:length(tr_fam$tip.label)) {
-  tr_fam$tip.label[i] <- spp_tax[tr_fam$tip.label[i]]
+  tr_fam$tip.label[i] <- fam_tax[tr_fam$tip.label[i]]
 }
-
-fam <- unique(env_df_fam2$species)
-
+fam <- unique(env_df_fam$species)
 tr_fam <- keep.tip(tr_fam, fam)
 
 # calculating hypervolumes and holes therein using persistence homology
 
 # hypervolumes 
-env_df_fam_pca2 <- prcomp(env_df_fam2[, 4:34])
+env_df_gen_pca2 <- prcomp(env_df_gen[, 4:34])
+env_df_gen_pca2 <- as.data.frame(
+                            cbind(as.character(env_df_gen$species),
+                                  env_df_gen$decimallongitude,
+                                  env_df_gen$decimallatitude,
+                                  env_df_gen_pca2$x[, 1:3]))
+colnames(env_df_gen_pca2) <- c("genus", "lon", "lat", "PC1", "PC2", "PC3")
+env_df_gen_pca2[, 2:6] <- apply(env_df_gen_pca2[, 2:6], 2, as.numeric)
+
+env_df_fam_pca2 <- prcomp(env_df_fam[, 4:34])
 env_df_fam_pca2 <- as.data.frame(
-                            cbind(as.character(env_df_fam2$species),
-                                  env_df_fam2$decimallongitude,
-                                  env_df_fam2$decimallatitude,
+                            cbind(as.character(env_df_fam$species),
+                                  env_df_fam$decimallongitude,
+                                  env_df_fam$decimallatitude,
                                   env_df_fam_pca2$x[, 1:3]))
 colnames(env_df_fam_pca2) <- c("family", "lon", "lat", "PC1", "PC2", "PC3")
 env_df_fam_pca2[, 2:6] <- apply(env_df_fam_pca2[, 2:6], 2, as.numeric)
 
 # calculating hypervolumes
+
+## FALTOU: Larix, Abies, Picea, Juniperus, Pinus 
+
+env_df_gen_hypervolume9 <- env_df_gen_pca2 %>%
+  filter(!genus %in% c("Austrotaxus", "Falcatifolium", "Nothotsuga")) %>%
+  filter(genus == "Larix") %>%
+  nest(data = -genus) %>%
+  mutate(hypervol = purrr::map(data, function(.x) {
+    hyper <- hypervolume_gaussian(.x[3:5])
+    hyper
+  }))
+save(env_df_gen_hypervolume9, file = "data/env_df_gen_hypervolume9.RData")
 
 # DO NOT RUN, too long - skip to line 335 to load the finished dataset
 
